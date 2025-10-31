@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pagelite — Blog</title>
+
+  <!-- Load sql.js -->
+  <script src="./assets/js/sql-wasm/1.13.0/sql-wasm.min.js"></script>
+
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      padding: 2rem;
+      background: #fafafa;
+      color: #333;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+    }
+
+    .logo {
+      width: 40px;
+      height: 40px;
+      object-fit: contain;
+    }
+
+    .brand {
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: #0078d7;
+      letter-spacing: -0.5px;
+    }
+
+    article {
+      max-width: 700px;
+      line-height: 1.6;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 1rem;
+      color: #222;
+    }
+
+    .content {
+      white-space: pre-line;
+      margin-top: 1rem;
+    }
+
+    a.back {
+      display: inline-block;
+      margin-top: 2rem;
+      color: #0078d7;
+      text-decoration: none;
+    }
+
+    a.back:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <span class="brand">Pagelite</span>
+  </header>
+
+  <article id="blog"></article>
+  <a class="back" href="index.html">← Back to Blog List</a>
+
+  <script>
+    async function loadPost() {
+      // Get the "id" parameter from the URL (e.g. ?id=3)
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get("id");
+      if (!id) {
+        document.getElementById("blog").innerHTML = "<p>❌ Invalid blog ID.</p>";
+        return;
+      }
+
+      // Initialize SQL.js
+      const SQL = await initSqlJs({
+        locateFile: file => `./assets/js/sql-wasm/1.13.0/${file}`
+      });
+
+      // Load the database
+      const response = await fetch("./blog.db");
+      const buffer = await response.arrayBuffer();
+      const db = new SQL.Database(new Uint8Array(buffer));
+
+      // Query the blog post
+      const stmt = db.prepare("SELECT title, content FROM blogs WHERE id = ?");
+      stmt.bind([id]);
+
+      if (stmt.step()) {
+        const [title, content] = stmt.get();
+        const blog = document.getElementById("blog");
+        blog.innerHTML = `
+          <h1>${title}</h1>
+          <div class="content">${content || ""}</div>
+        `;
+      } else {
+        document.getElementById("blog").innerHTML = "<p>❌ Blog not found.</p>";
+      }
+
+      stmt.free();
+      db.close();
+    }
+
+    loadPost().catch(console.error);
+  </script>
+</body>
+</html>
