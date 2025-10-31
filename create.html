@@ -1,168 +1,204 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Pagelite — Create New Post</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pagelite — Create New Post</title>
 
-  <!-- SQL.js (WASM) -->
-  <script src="./assets/js/sql-wasm/1.13.0/sql-wasm.min.js"></script>
+    <!-- SQL.js (WASM) -->
+    <script src="./assets/js/sql-wasm/1.13.0/sql-wasm.min.js"></script>
 
-  <!-- Quill Rich Text Editor -->
-  <link href="./assets/css/quill/2.0.2/quill.snow.css" rel="stylesheet" />
-  <script src="./assets/js/quill/2.0.2/quill.min.js"></script>
+    <!-- Quill Rich Text Editor -->
+    <link href="./assets/css/quill/2.0.2/quill.snow.css" rel="stylesheet" />
+    <script src="./assets/js/quill/2.0.2/quill.min.js"></script>
 
-  <style>
-    body {
-      font-family: system-ui, sans-serif;
-      padding: 2rem;
-      background: #fafafa;
-      color: #333;
-      max-width: 800px;
-      margin: 0 auto;
-    }
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            padding: 2rem;
+            background: #fafafa;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+        }
 
-    header {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin-bottom: 2rem;
-    }
+        header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
 
-    .logo {
-      width: 40px;
-      height: 40px;
-      object-fit: contain;
-    }
+        .brand {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #0078d7;
+        }
 
-    .brand {
-      font-size: 1.8rem;
-      font-weight: 600;
-      color: #0078d7;
-    }
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #444;
+        }
 
-    h2 {
-      font-size: 1.5rem;
-      margin-bottom: 1rem;
-      color: #444;
-    }
+        label {
+            display: block;
+            margin: 1rem 0 0.5rem;
+            font-weight: 600;
+        }
 
-    label {
-      display: block;
-      margin: 1rem 0 0.5rem;
-      font-weight: 600;
-    }
+        input[type="text"] {
+            width: 100%;
+            padding: 0.6rem;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 1rem;
+        }
 
-    input[type="text"] {
-      width: 100%;
-      padding: 0.6rem;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      font-size: 1rem;
-    }
+        #editor {
+            background: #fff;
+            height: 300px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
 
-    #editor {
-      background: #fff;
-      height: 250px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-    }
+        button {
+            margin-top: 1.5rem;
+            padding: 0.7rem 1.4rem;
+            background: #0078d7;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
 
-    button {
-      margin-top: 1.5rem;
-      padding: 0.7rem 1.4rem;
-      background: #0078d7;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 1rem;
-      cursor: pointer;
-    }
+        button:hover {
+            background: #005fa3;
+        }
 
-    button:hover {
-      background: #005fa3;
-    }
+        a.back {
+            display: inline-block;
+            margin-top: 1.5rem;
+            color: #0078d7;
+            text-decoration: none;
+        }
 
-    a.back {
-      display: inline-block;
-      margin-top: 1.5rem;
-      color: #0078d7;
-      text-decoration: none;
-    }
+        a.back:hover {
+            text-decoration: underline;
+        }
 
-    a.back:hover {
-      text-decoration: underline;
-    }
-  </style>
+        .ql-editor img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 6px;
+        }
+    </style>
 </head>
+
 <body>
-  <header>
-    <span class="brand">Pagelite</span>
-  </header>
+    <header>
+        <span class="brand">Pagelite</span>
+    </header>
 
-  <h2>Create New Post</h2>
+    <h2>Create New Post</h2>
 
-  <label for="title">Post Title</label>
-  <input type="text" id="title" placeholder="Enter post title" />
+    <label for="title">Post Title</label>
+    <input type="text" id="title" placeholder="Enter post title" />
 
-  <label for="editor">Post Content</label>
-  <div id="editor"></div>
+    <label for="editor">Post Content</label>
+    <div id="editor"></div>
 
-  <button id="saveBtn">Save Post & Export DB</button>
+    <button id="saveBtn">Save Post & Export DB</button>
+    <a class="back" href="index.html">← Back to Blog List</a>
 
-  <a class="back" href="index.html">← Back to Blog List</a>
+    <script>
+        let db;
 
-  <script>
-    let db;
+        // --- Custom Image Handler for Base64 Upload ---
+        function imageHandler() {
+            const input = document.createElement('input');
+            input.setAttribute('type', 'file');
+            input.setAttribute('accept', 'image/*');
+            input.click();
 
-    // Initialize Quill editor
-    const quill = new Quill('#editor', {
-      theme: 'snow',
-      placeholder: 'Write your post content here...',
-    });
+            input.onchange = () => {
+                const file = input.files[0];
+                if (!file) return;
 
-    async function initDB() {
-      const SQL = await initSqlJs({
-        locateFile: file => `./assets/js/sql-wasm/1.13.0/${file}`
-      });
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const range = quill.getSelection();
+                    quill.insertEmbed(range.index, 'image', e.target.result);
+                };
+                reader.readAsDataURL(file); // convert to base64
+            };
+        }
 
-      // Load blog.db
-      const response = await fetch('./blog.db');
-      const buffer = await response.arrayBuffer();
-      db = new SQL.Database(new Uint8Array(buffer));
-    }
+        // Initialize Quill editor with a modern blog-style toolbar
+        const quill = new Quill('#editor', {
+            theme: 'snow',
+            placeholder: 'Write your post content here...',
+            modules: {
+                toolbar: {
+                    container: [
+                        [{ size: ['small', false, 'large', 'huge'] }],
+                        [{ header: [1, 2, 3, 4, 5, 6, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        ['blockquote', 'code-block'],
+                        [{ list: 'ordered' }, { list: 'bullet' }, { list: 'check' }],
+                        [{ align: [] }],
+                        [{ color: [] }, { background: [] }],
+                        ['link', 'image'],
+                        ['clean']
+                    ],
+                    handlers: {
+                        image: imageHandler // Custom Base64 uploader
+                    }
+                }
+            }
+        });
 
-    async function savePost() {
-      const title = document.getElementById('title').value.trim();
-      const content = quill.root.innerHTML.trim();
+        async function initDB() {
+            const SQL = await initSqlJs({
+                locateFile: file => `./assets/js/sql-wasm/1.13.0/${file}`
+            });
 
-      if (!title || !content) {
-        alert('Please enter a title and content.');
-        return;
-      }
+            const response = await fetch('./blog.db');
+            const buffer = await response.arrayBuffer();
+            db = new SQL.Database(new Uint8Array(buffer));
+        }
 
-      // Insert post into database
-      db.run('INSERT INTO blogs (title, content) VALUES (?, ?)', [title, content]);
+        async function savePost() {
+            const title = document.getElementById('title').value.trim();
+            const content = quill.root.innerHTML.trim();
 
-      // Export the updated DB
-      const data = db.export();
-      const blob = new Blob([data], { type: 'application/octet-stream' });
-      const url = URL.createObjectURL(blob);
+            if (!title || !content) {
+                alert('Please enter a title and content.');
+                return;
+            }
 
-      // Create download link
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'blog.db';
-      a.click();
-      URL.revokeObjectURL(url);
+            // Insert post into database
+            db.run('INSERT INTO blogs (title, content) VALUES (?, ?)', [title, content]);
 
-      alert('✅ Post saved! Downloaded updated blog.db.\nReplace it on your server to persist.');
-    }
+            // Export the updated DB
+            const data = db.export();
+            const blob = new Blob([data], { type: 'application/octet-stream' });
+            const url = URL.createObjectURL(blob);
 
-    document.getElementById('saveBtn').addEventListener('click', savePost);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'blog.db';
+            a.click();
+            URL.revokeObjectURL(url);
 
-    // Initialize database on load
-    initDB().catch(console.error);
-  </script>
+            alert('✅ Post saved and blog.db downloaded.\nReplace it on your server to persist.');
+        }
+
+        document.getElementById('saveBtn').addEventListener('click', savePost);
+        initDB().catch(console.error);
+    </script>
 </body>
+
 </html>
